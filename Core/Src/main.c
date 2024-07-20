@@ -40,13 +40,9 @@ void motor_up(void);
 void motor_down(void);
 void motor_stopup(void);
 void motor_stopdown(void);
-void up_down(void);
-void timer_init(void);
 void adc_init(void);
 uint16_t ADC_READ();
-float adc_avg_current();
 void adc_clock(void);
-void AVERAGE();
 void UART_INIT();
 void SEND_UART(char );
 void string_uart(char *);
@@ -99,7 +95,6 @@ int main(void)
   /* USER CODE BEGIN Init */
   dsw_lsw_rl_gpio_init();
   adc_init();
-  //UART_INIT();
 
   /* USER CODE END Init */
 
@@ -221,16 +216,18 @@ uint16_t ADC_READ()
 /*-------------------------------------MOTOR_UP--------------------------------*/
 void motor_down(void)
 {
-   GPIOA->BSRR|=(1<<21);//RELAY R1 ON
    GPIOA->ODR|=(1<<6);//RELAY R2 OFF
+   delay_ms(1);
+   GPIOA->BSRR|=(1<<21);//RELAY R1 ON
 }
 
 
 /*------------------------------------MOTOR_DOWN-----------------------------*/
 void motor_up(void)
 {
-   GPIOA->BSRR|=(1<<22);//RELAY R2 ON
    GPIOA->ODR|=(1<<5);//RELAY R1 0FF
+   delay_ms(1);
+   GPIOA->BSRR|=(1<<22);//RELAY R2 ON
 }
 
 
@@ -238,14 +235,13 @@ void motor_up(void)
 void motor_stop(void)
 {
 	GPIOA->ODR|=(1<<5)|(1<<6);//Stop Motor,RELAY PINS HIGH
-	//current=0;
 	cnt=0;
 }
 /************************************ANTI-PINCH*********************************/
 void anti_pinch(void)
 {
 motor_stop();
-//delay_ms(1);
+delay_ms(1);
 motor_down();
 delay_ms(50);
 motor_stop();
@@ -304,6 +300,7 @@ label1:if(((GPIOA->IDR>>1)&1)==1)
 	 {
 		 if(!CURRENT())
 		 {
+			 anti_pinch();
 		 }
 	 }
 	 motor_stop();
@@ -328,7 +325,6 @@ int CURRENT(void)
    {
 	   adc_val=adc_val+ADC_READ();
    }
-   //adc_val=ADC_READ();
    adc_val=adc_val/10;
    adc_vol=(adc_val*(3.6/4095.0))-0.52;
    adc_cur=(adc_vol-2.5)/0.066;
@@ -338,7 +334,7 @@ int CURRENT(void)
    }
      if(adc_cur>THRESHOLD_CURRENT)
      {
-  	   anti_pinch();
+  	   return 0;
      }
   return 1;
 }
